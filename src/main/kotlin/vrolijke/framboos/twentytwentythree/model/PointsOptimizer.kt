@@ -1,4 +1,4 @@
-import vrolijke.framboos.twentytwentythree.model.Point
+package vrolijke.framboos.twentytwentythree.model
 
 inline fun optimizePoints(points: MutableList<Point>): MutableList<Point> {
     val uniquePoints = mutableListOf<Point>()

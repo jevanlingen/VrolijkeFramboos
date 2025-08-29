@@ -1,6 +1,5 @@
 package vrolijke.framboos.twentytwentythree
 
-import optimizePoints
 import vrolijke.framboos.twentytwentythree.http.getGameState
 import vrolijke.framboos.twentytwentythree.http.move
 import vrolijke.framboos.twentytwentythree.model.Direction
@@ -10,6 +9,7 @@ import vrolijke.framboos.twentytwentythree.model.GameState
 import vrolijke.framboos.twentytwentythree.model.Point
 import vrolijke.framboos.twentytwentythree.model.State
 import vrolijke.framboos.twentytwentythree.model.State.Finished
+import vrolijke.framboos.twentytwentythree.model.optimizePoints
 
 fun getStartingDirection(walls: List<Direction>): Direction {
     if (Left !in walls) {

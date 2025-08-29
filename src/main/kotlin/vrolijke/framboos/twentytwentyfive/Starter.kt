@@ -9,17 +9,17 @@ fun main() {
     val playerPassword = "111111111111111111"
     val emojiAlias = "robot"
 
-    println("Registering player: $playerName")
+    //println("Registering player: $playerName")
     val registrationResponse = registerPlayer(playerName, playerPassword, emojiAlias)
 
     if (registrationResponse.status == PlayerStatus.Registered && registrationResponse.id != null) {
-        println("Successfully registered with ID: ${registrationResponse.id}")
+        //println("Successfully registered with ID: ${registrationResponse.id}")
         playerId = registrationResponse.id
         password = playerPassword
 
         startGameLoop(registrationResponse.id, playerPassword)
     } else {
-        println("Failed to register: ${registrationResponse.message}")
+        //println("Failed to register: ${registrationResponse.message}")
     }
 }
 
@@ -29,16 +29,16 @@ val recentPath = mutableListOf<String>() // Keep track of recent path to prevent
 const val RECENT_PATH_SIZE = 5 // Don't go back to last 5 nodes
 
 fun startGameLoop(pid: UUID, pass: String) {
-    println("Starting game loop for player: $pid")
+    //println("Starting game loop for player: $pid")
 
     while (true) {
         try {
             val gameState = getCurrentGameState(pid, pass)
-            println("Game state: ${gameState.state}, Location: ${gameState.location}, Points: ${gameState.points}")
+            //println("Game state: ${gameState.state}, Location: ${gameState.location}, Points: ${gameState.points}")
 
             when (gameState.state) {
                 GameState.Waiting -> {
-                    println("Waiting for game to start...")
+                    //println("Waiting for game to start...")
                     // Clear visited nodes when waiting for a new game
                     visitedNodes.clear()
                     recentPath.clear()
@@ -58,14 +58,14 @@ fun startGameLoop(pid: UUID, pass: String) {
                                 recentPath.removeAt(0)
                             }
 
-                            println("Visited nodes: ${visitedNodes.size}, Recent path: ${recentPath.joinToString(" -> ")}")
+                            //println("Visited nodes: ${visitedNodes.size}, Recent path: ${recentPath.joinToString(" -> ")}")
                         }
                     }
                     playGame(pid, pass, gameState)
                 }
             }
         } catch (e: Exception) {
-            println("Error in game loop: ${e.message}")
+            //println("Error in game loop: ${e.message}")
             e.printStackTrace()
             Thread.sleep(5000)
         }
@@ -73,7 +73,7 @@ fun startGameLoop(pid: UUID, pass: String) {
 }
 
 fun playGame(pid: UUID, pass: String, gameState: GameStateDTO) {
-    println("Playing game at location: ${gameState.location}, Action: ${gameState.action}, Points: ${gameState.points}")
+    //println("Playing game at location: ${gameState.location}, Action: ${gameState.action}, Points: ${gameState.points}")
 
     when (gameState.action) {
         GameAction.Idle -> {
@@ -91,9 +91,9 @@ fun playGame(pid: UUID, pass: String, gameState: GameStateDTO) {
                     (gameState.dataSources.isNullOrEmpty() || visitedNodes.size % 10 == 0)
 
             if (shouldScan) {
-                println("Scanning network for data sources...")
+                //println("Scanning network for data sources...")
                 val scanResult = scanNetwork(pid, pass)
-                println("Found ${scanResult.dataSources?.size ?: 0} data sources: ${scanResult.dataSources?.keys}")
+                //println("Found ${scanResult.dataSources?.size ?: 0} data sources: ${scanResult.dataSources?.keys}")
 
                 // If scan found data sources, update our knowledge
                 if (!scanResult.dataSources.isNullOrEmpty()) {
@@ -107,9 +107,9 @@ fun playGame(pid: UUID, pass: String, gameState: GameStateDTO) {
             if (!gameState.dataSources.isNullOrEmpty()) {
                 val dataSource = gameState.dataSources[gameState.location]
                 if (dataSource != null) {
-                    println("Found data source at ${gameState.location}: ${dataSource.dataPoints} points")
-                    // Start downloading
-                    downloadData(pid, pass)
+                    //println("Found data source at ${gameState.location}: ${dataSource.dataPoints} points")
+                    // Start downloading - just call once, let the game handle the download state
+                    download(pid, pass)
                     return
                 }
             }
@@ -119,7 +119,7 @@ fun playGame(pid: UUID, pass: String, gameState: GameStateDTO) {
                 // Place honeypot at high-traffic nodes (nodes with many edges)
                 val edgeCount = network.edges.count { it.from == gameState.location || it.to == gameState.location }
                 if (edgeCount >= 3 && gameState.placedHoneypot == null) {
-                    println("Placing honeypot at high-traffic location with $edgeCount connections")
+                    //println("Placing honeypot at high-traffic location with $edgeCount connections")
                     placeHoneypot(pid, pass)
                     return
                 }
@@ -128,34 +128,36 @@ fun playGame(pid: UUID, pass: String, gameState: GameStateDTO) {
             // Find next location to move to
             val nextLocation = findNextLocation(gameState.location, network, gameState.dataSources)
             if (nextLocation != null) {
-                println("Moving from ${gameState.location} to $nextLocation")
+                //println("Moving from ${gameState.location} to $nextLocation")
                 move(pid, pass, nextLocation)
             } else {
-                println("No valid moves available, waiting...")
+                //println("No valid moves available, waiting...")
                 Thread.sleep(1000)
             }
         }
 
         GameAction.Move -> {
-            println("Currently moving...")
+            //println("Currently moving...")
             // Wait for movement to complete by polling game state
             waitForActionToComplete(pid, pass, GameAction.Move)
         }
 
         GameAction.Download -> {
-            println("Currently downloading...")
-            // Continue downloading until complete
-            waitForActionToComplete(pid, pass, GameAction.Download)
+            //println("Currently downloading...")
+            // Keep calling download while in download state
+            val result = download(pid, pass)
+            //println("Download in progress - Current points: ${result.points}")
+            Thread.sleep(100) // Small delay between downloads
         }
 
         GameAction.ScanNetwork -> {
-            println("Currently scanning network...")
+            //println("Currently scanning network...")
             // Wait for scan to complete
             waitForActionToComplete(pid, pass, GameAction.ScanNetwork)
         }
 
         GameAction.PlaceHoneypot -> {
-            println("Placing honeypot...")
+            //println("Placing honeypot...")
             // Wait for honeypot placement to complete
             waitForActionToComplete(pid, pass, GameAction.PlaceHoneypot)
         }
@@ -167,31 +169,31 @@ fun playGame(pid: UUID, pass: String, gameState: GameStateDTO) {
 }
 
 fun printNetworkTopology(network: NetworkDTO, currentLocation: String?) {
-    println("\n=== NETWORK TOPOLOGY ===")
-    println("Total nodes: ${network.nodes.size}")
-    println("Total edges: ${network.edges.size}")
-    println("Current location: $currentLocation")
+    //println("\n=== NETWORK TOPOLOGY ===")
+    //println("Total nodes: ${network.nodes.size}")
+    //println("Total edges: ${network.edges.size}")
+    //println("Current location: $currentLocation")
 
-    println("\nNodes:")
-    network.nodes.take(10).forEach { node ->
-        println("  - $node ${if (node == currentLocation) "(YOU ARE HERE)" else ""}")
+    //println("\nNodes:")
+    network.nodes.take(10).forEach {
+        //println("  - $it ${if (it == currentLocation) "(YOU ARE HERE)" else ""}")
     }
     if (network.nodes.size > 10) {
-        println("  ... and ${network.nodes.size - 10} more nodes")
+        //println("  ... and ${network.nodes.size - 10} more nodes")
     }
 
-    println("\nEdges from current location:")
+    //println("\nEdges from current location:")
     val edgesFromCurrent = network.edges.filter {
         it.from == currentLocation || it.to == currentLocation
     }
-    edgesFromCurrent.forEach { edge ->
-        if (edge.from == currentLocation) {
-            println("  -> ${edge.to} (latency: ${edge.latency})")
+    edgesFromCurrent.forEach {
+        if (it.from == currentLocation) {
+            //println("  -> ${it.to} (latency: ${it.latency})")
         } else {
-            println("  <- ${edge.from} (latency: ${edge.latency})")
+            //println("  <- ${it.from} (latency: ${it.latency})")
         }
     }
-    println("========================\n")
+    //println("========================\n")
 }
 
 fun findNextLocation(currentLocation: String?, network: NetworkDTO, dataSources: Map<String, DataSourceDTO>?): String? {
@@ -216,18 +218,18 @@ fun findNextLocation(currentLocation: String?, network: NetworkDTO, dataSources:
 
     // First try moves that are not in recent path
     val possibleMoves = if (movesNotInRecentPath.isNotEmpty()) {
-        println("Found ${movesNotInRecentPath.size} moves outside recent path")
+        //println("Found ${movesNotInRecentPath.size} moves outside recent path")
         movesNotInRecentPath
     } else {
         // If ALL moves are in recent path, we're stuck - only allow moves NOT in last 2 positions
-        println("WARNING: All adjacent nodes are in recent path, trying to avoid immediate backtrack")
+        //println("WARNING: All adjacent nodes are in recent path, trying to avoid immediate backtrack")
         val lastTwo = recentPath.takeLast(2).toSet()
         val emergencyMoves = allPossibleMoves.filter { edge ->
             !lastTwo.contains(edge.to)
         }
 
         emergencyMoves.ifEmpty {
-            println("CRITICAL: Cannot move without immediate backtracking - allowing oldest visited node")
+            //println("CRITICAL: Cannot move without immediate backtracking - allowing oldest visited node")
             // Last resort: move to the oldest node in recent path
             allPossibleMoves.filter { edge ->
                 edge.to != recentPath.lastOrNull() // Never go to immediately previous node
@@ -236,37 +238,50 @@ fun findNextLocation(currentLocation: String?, network: NetworkDTO, dataSources:
     }
 
     if (possibleMoves.isEmpty()) {
-        println("ERROR: No valid moves available - completely stuck!")
-        println("Current location: $currentLocation")
-        println("Recent path: ${recentPath.joinToString(" -> ")}")
-        println("All possible destinations: ${allPossibleMoves.map { it.to }}")
+        //println("ERROR: No valid moves available - completely stuck!")
+        //println("Current location: $currentLocation")
+        //println("Recent path: ${recentPath.joinToString(" -> ")}")
+        //println("All possible destinations: ${allPossibleMoves.map { it.to }}")
         return null
     }
 
-    println("Possible moves from $currentLocation:")
-    possibleMoves.forEach { edge ->
-        val inPath = if (recentPath.contains(edge.to)) " (IN RECENT PATH!)" else ""
-        val visited = if (visitedNodes.contains(edge.to)) " (visited)" else " (new)"
-        println("  - ${edge.to} (latency: ${edge.latency})$visited$inPath")
+    //println("Possible moves from $currentLocation:")
+    possibleMoves.forEach {
+        val inPath = if (recentPath.contains(it.to)) " (IN RECENT PATH!)" else ""
+        val visited = if (visitedNodes.contains(it.to)) " (visited)" else " (new)"
+        //println("  - ${it.to} (latency: ${it.latency})$visited$inPath")
     }
 
-    // Prioritize data sources NOT in recent path
+    // Prioritize data sources based on efficiency (blockSize/latency ratio)
     if (!dataSources.isNullOrEmpty()) {
-        val moveToNewDataSource = possibleMoves.find { edge ->
-            dataSources.containsKey(edge.to) && !recentPath.contains(edge.to)
-        }
-        if (moveToNewDataSource != null) {
-            println("Found data source NOT in recent path: ${moveToNewDataSource.to}")
-            return moveToNewDataSource.to
+        // Calculate efficiency score for each data source (higher is better)
+        val dataSourcesWithScore = possibleMoves
+            .filter { edge -> dataSources.containsKey(edge.to) }
+            .map { edge ->
+                val ds = dataSources[edge.to]!!
+                // Efficiency = blockSize / latency * dataPoints
+                // We want high blockSize, low latency, and high dataPoints
+                val efficiency = (ds.blockSize.toDouble() / ds.latency.toDouble()) * ds.dataPoints
+                Triple(edge, ds, efficiency)
+            }
+            .sortedByDescending { it.third } // Sort by efficiency score
+        
+        // First try data sources NOT in recent path, sorted by efficiency
+        val bestUnvisitedDataSource = dataSourcesWithScore
+            .find { (edge, _, _) -> !recentPath.contains(edge.to) }
+        
+        if (bestUnvisitedDataSource != null) {
+            val (edge, ds, efficiency) = bestUnvisitedDataSource
+            println("Found efficient data source: ${edge.to} (efficiency: ${String.format("%.2f", efficiency)}, blockSize: ${ds.blockSize}, latency: ${ds.latency}ms, points: ${ds.dataPoints})")
+            return edge.to
         }
 
-        // If desperate, go to data source even if in recent path (but not last node)
-        val moveToAnyDataSource = possibleMoves.find { edge ->
-            dataSources.containsKey(edge.to)
-        }
-        if (moveToAnyDataSource != null) {
-            println("Found data source (may be in path): ${moveToAnyDataSource.to}")
-            return moveToAnyDataSource.to
+        // If desperate, go to most efficient data source even if in recent path (but not last node)
+        val bestAnyDataSource = dataSourcesWithScore.firstOrNull()
+        if (bestAnyDataSource != null) {
+            val (edge, ds, efficiency) = bestAnyDataSource
+            println("Going to visited data source: ${edge.to} (efficiency: ${String.format("%.2f", efficiency)})")
+            return edge.to
         }
     }
 
@@ -276,7 +291,7 @@ fun findNextLocation(currentLocation: String?, network: NetworkDTO, dataSources:
         .minByOrNull { it.latency }
 
     if (completelyNew != null) {
-        println("Choosing completely new node: ${completelyNew.to}")
+        //println("Choosing completely new node: ${completelyNew.to}")
         return completelyNew.to
     }
 
@@ -286,14 +301,14 @@ fun findNextLocation(currentLocation: String?, network: NetworkDTO, dataSources:
         .minByOrNull { it.latency }
 
     if (visitedButNotRecent != null) {
-        println("Choosing visited but not recent: ${visitedButNotRecent.to}")
+        //println("Choosing visited but not recent: ${visitedButNotRecent.to}")
         return visitedButNotRecent.to
     }
 
     // Last resort: pick anything with lowest latency
     val bestMove = possibleMoves.minByOrNull { it.latency }
     if (bestMove != null) {
-        println("FORCED BACKTRACK to: ${bestMove.to}")
+        //println("FORCED BACKTRACK to: ${bestMove.to}")
     }
     return bestMove?.to
 }
@@ -310,30 +325,30 @@ fun waitForActionToComplete(pid: UUID, pass: String, currentAction: GameAction) 
             val state = getCurrentGameState(pid, pass)
 
             if (state.action != currentAction) {
-                println("Action complete after $pollCount polls. New state: ${state.action}")
+                //println("Action complete after $pollCount polls. New state: ${state.action}")
                 stillInAction = false
 
                 // If we've arrived at a location with data, start downloading immediately
                 if (state.action == GameAction.Idle && !state.dataSources.isNullOrEmpty()) {
                     val dataSource = state.dataSources[state.location]
                     if (dataSource != null) {
-                        println("Arrived at data source! Starting download...")
+                        //println("Arrived at data source! Starting download...")
                         downloadData(pid, pass)
                     }
                 }
             } else if (pollCount % 10 == 0) {
                 // Log progress every 10 polls (2 seconds)
-                println("Still ${currentAction}... (poll #$pollCount)")
+                //println("Still ${currentAction}... (poll #$pollCount)")
             }
         } catch (e: Exception) {
-            println("Error polling state: ${e.message}")
+            //println("Error polling state: ${e.message}")
             stillInAction = false
         }
     }
 }
 
 fun downloadData(pid: UUID, pass: String) {
-    println("Starting download at current location...")
+    //println("Starting download at current location...")
     var downloading = true
     var downloadCount = 0
 
@@ -342,23 +357,23 @@ fun downloadData(pid: UUID, pass: String) {
             val downloadState = download(pid, pass)
             downloadCount++
 
-            println("Download #$downloadCount - Current points: ${downloadState.points}")
+            //println("Download #$downloadCount - Current points: ${downloadState.points}")
 
             // Check if we're still downloading or if the data source is empty
             if (downloadState.action != GameAction.Download) {
-                println("Download complete or data source empty")
+                //println("Download complete or data source empty")
                 downloading = false
             } else if (downloadState.dataSources?.get(downloadState.location) == null) {
-                println("No more data at this location")
+                //println("No more data at this location")
                 downloading = false
             }
 
             Thread.sleep(100) // Small delay between download attempts
         } catch (e: Exception) {
-            println("Download error: ${e.message}")
+            //println("Download error: ${e.message}")
             downloading = false
         }
     }
 
-    println("Downloaded $downloadCount blocks")
+    //println("Downloaded $downloadCount blocks")
 }
